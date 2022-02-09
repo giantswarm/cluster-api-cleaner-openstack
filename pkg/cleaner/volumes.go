@@ -10,39 +10,47 @@ import (
 	capo "sigs.k8s.io/cluster-api-provider-openstack/api/v1alpha4"
 	"sigs.k8s.io/cluster-api-provider-openstack/pkg/cloud/services/provider"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/giantswarm/microerror"
+
+	"github.com/giantswarm/cluster-api-cleaner-openstack/pkg/key"
 )
 
 type VolumeCleaner struct {
+	cli client.Client
 }
 
-const cinderCsiTag = "cinder.csi.openstack.org/cluster"
+func NewVolumeCleaner(cli client.Client) *VolumeCleaner {
+	return &VolumeCleaner{cli: cli}
+}
 
-func (vc *VolumeCleaner) Clean(cli client.Client, log logr.Logger, oc *capo.OpenStackCluster) error {
-	clusterTag := getClusterTag(oc)
-	if clusterTag == "" {
-		return nil
-	}
+// force implementing Cleaner interface
+var _ Cleaner = &VolumeCleaner{}
 
-	providerClient, opts, err := provider.NewClientFromCluster(context.TODO(), cli, oc)
+func (vc *VolumeCleaner) Clean(ctx context.Context, log logr.Logger, oc *capo.OpenStackCluster, clusterTag string) error {
+	log = log.WithName("VolumeCleaner")
+
+	providerClient, opts, err := provider.NewClientFromCluster(ctx, vc.cli, oc)
 	if err != nil {
-		return err
+		return microerror.Mask(err)
 	}
 
 	volumeClient, err := openstack.NewBlockStorageV3(providerClient, gophercloud.EndpointOpts{
 		Region: opts.RegionName,
 	})
 	if err != nil {
-		return err
+		return microerror.Mask(err)
 	}
 
-	allPages, err := volumes.List(volumeClient, volumes.ListOpts{Metadata: map[string]string{cinderCsiTag: clusterTag}}).AllPages()
+	listOpts := volumes.ListOpts{Metadata: map[string]string{key.CinderCsiTag: clusterTag}}
+	allPages, err := volumes.List(volumeClient, listOpts).AllPages()
 	if err != nil {
-		return err
+		return microerror.Mask(err)
 	}
 
 	volumeList, err := volumes.ExtractVolumes(allPages)
 	if err != nil {
-		return err
+		return microerror.Mask(err)
 	}
 
 	deleteOpts := volumes.DeleteOpts{
@@ -50,10 +58,10 @@ func (vc *VolumeCleaner) Clean(cli client.Client, log logr.Logger, oc *capo.Open
 	}
 
 	for _, volume := range volumeList {
-		log.Info("Deleting volume", "id", volume.ID)
+		log.Info("Cleaning volume", "id", volume.ID)
 		err = volumes.Delete(volumeClient, volume.ID, deleteOpts).ExtractErr()
 		if err != nil {
-			return err
+			return microerror.Mask(err)
 		}
 	}
 

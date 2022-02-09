@@ -17,10 +17,10 @@ limitations under the License.
 package main
 
 import (
+	"context"
 	"flag"
+	"fmt"
 	"os"
-
-	"github.com/giantswarm/cluster-api-cleaner-openstack/pkg/cleaner"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
@@ -31,7 +31,10 @@ import (
 	capo "sigs.k8s.io/cluster-api-provider-openstack/api/v1alpha4"
 	capi "sigs.k8s.io/cluster-api/api/v1beta1"
 
+	"github.com/giantswarm/microerror"
+
 	"github.com/giantswarm/cluster-api-cleaner-openstack/controllers"
+	"github.com/giantswarm/cluster-api-cleaner-openstack/pkg/cleaner"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -49,6 +52,14 @@ func init() {
 }
 
 func main() {
+	err := mainE(context.Background())
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %s\n\nTo increase verbosity, re-run with --level=debug\n", microerror.Pretty(err, true))
+		os.Exit(2)
+	}
+}
+
+func mainE(ctx context.Context) error {
 	var (
 		enableLeaderElection bool
 		managementCluster    string
@@ -66,7 +77,12 @@ func main() {
 
 	ctrl.SetLogger(zap.New(zap.UseDevMode(true)))
 
-	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
+	config, err := ctrl.GetConfig()
+	if err != nil {
+		return err
+	}
+
+	mgr, err := ctrl.NewManager(config, ctrl.Options{
 		Scheme:             scheme,
 		MetricsBindAddress: metricsAddr,
 		Port:               9443,
@@ -75,7 +91,12 @@ func main() {
 	})
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
-		os.Exit(1)
+		return err
+	}
+
+	cleaners := []cleaner.Cleaner{
+		cleaner.NewVolumeCleaner(mgr.GetClient()),
+		cleaner.NewLoadBalancerCleaner(mgr.GetClient()),
 	}
 
 	if err = (&controllers.OpenstackClusterReconciler{
@@ -83,16 +104,18 @@ func main() {
 		Log:    ctrl.Log.WithName("controllers").WithName("OpenstackCluster"),
 
 		ManagementCluster: managementCluster,
-		Cleaners:          []cleaner.Cleaner{&cleaner.LoadBalancerCleaner{}, &cleaner.VolumeCleaner{}},
+		Cleaners:          cleaners,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "OpenstackCluster")
-		os.Exit(1)
+		return err
 	}
 	// +kubebuilder:scaffold:builder
 
 	setupLog.Info("starting manager")
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
 		setupLog.Error(err, "problem running manager")
-		os.Exit(1)
+		return err
 	}
+
+	return nil
 }

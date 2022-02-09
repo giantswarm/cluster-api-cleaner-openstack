@@ -8,7 +8,6 @@ require (
 	github.com/gophercloud/gophercloud v0.16.0
 	github.com/prometheus/client_golang v1.12.0 // indirect
 	golang.org/x/net v0.0.0-20211216030914-fe4d6282115f // indirect
-	k8s.io/api v0.22.2
 	k8s.io/apimachinery v0.22.2
 	k8s.io/client-go v0.22.2
 	sigs.k8s.io/cluster-api v1.0.1-0.20211028151834-d72fd59c8483

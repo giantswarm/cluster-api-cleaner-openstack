@@ -18,13 +18,8 @@ package controllers
 
 import (
 	"context"
-	"time"
+	"fmt"
 
-	"github.com/giantswarm/cluster-api-cleaner-openstack/pkg/cleaner"
-
-	"github.com/giantswarm/cluster-api-cleaner-openstack/pkg/key"
-
-	"github.com/giantswarm/microerror"
 	"github.com/go-logr/logr"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	capo "sigs.k8s.io/cluster-api-provider-openstack/api/v1alpha4"
@@ -34,6 +29,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+
+	"github.com/giantswarm/microerror"
+
+	"github.com/giantswarm/cluster-api-cleaner-openstack/pkg/cleaner"
+	"github.com/giantswarm/cluster-api-cleaner-openstack/pkg/key"
 )
 
 // OpenstackClusterReconciler reconciles a openstackCluster object
@@ -51,7 +51,7 @@ type OpenstackClusterReconciler struct {
 
 func (r *OpenstackClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := r.Log.WithValues("openstackcluster", req.NamespacedName)
-	log.Info("Reconciling")
+	log.V(1).Info("Reconciling")
 
 	var infraCluster capo.OpenStackCluster
 	err := r.Get(ctx, req.NamespacedName, &infraCluster)
@@ -69,7 +69,7 @@ func (r *OpenstackClusterReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	}
 	if coreCluster == nil {
 		log.Info("Cluster Controller has not yet set OwnerRef")
-		return reconcile.Result{}, microerror.Mask(err)
+		return reconcile.Result{}, nil
 	}
 
 	log = log.WithValues("cluster", coreCluster.Name)
@@ -80,18 +80,13 @@ func (r *OpenstackClusterReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		return ctrl.Result{}, nil
 	}
 
-	if infraCluster.Name == r.ManagementCluster {
-		log.Info("Skipping management cluster")
-		return ctrl.Result{}, nil
-	}
-
 	// Handle deleted clusters
 	if !infraCluster.DeletionTimestamp.IsZero() {
-		return r.reconcileDelete(ctx, &infraCluster)
+		return r.reconcileDelete(ctx, log, &infraCluster)
 	}
 
 	// Handle non-deleted clusters
-	return r.reconcileNormal(ctx, &infraCluster)
+	return r.reconcileNormal(ctx, log, &infraCluster)
 }
 
 func (r *OpenstackClusterReconciler) SetupWithManager(mgr ctrl.Manager) error {
@@ -100,7 +95,7 @@ func (r *OpenstackClusterReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Complete(r)
 }
 
-func (r *OpenstackClusterReconciler) reconcileNormal(ctx context.Context, openstackCluster *capo.OpenStackCluster) (reconcile.Result, error) {
+func (r *OpenstackClusterReconciler) reconcileNormal(ctx context.Context, log logr.Logger, openstackCluster *capo.OpenStackCluster) (reconcile.Result, error) {
 	// If the openstackCluster doesn't have the finalizer, add it.
 	if !controllerutil.ContainsFinalizer(openstackCluster, key.CleanerFinalizerName) {
 		controllerutil.AddFinalizer(openstackCluster, key.CleanerFinalizerName)
@@ -111,22 +106,30 @@ func (r *OpenstackClusterReconciler) reconcileNormal(ctx context.Context, openst
 	}
 
 	// Cleaner doesn't do anything for normal
-	return ctrl.Result{
-		Requeue:      true,
-		RequeueAfter: time.Minute * 5,
-	}, nil
+	return ctrl.Result{}, nil
 }
 
-func (r *OpenstackClusterReconciler) reconcileDelete(ctx context.Context, openstackCluster *capo.OpenStackCluster) (reconcile.Result, error) {
+func (r *OpenstackClusterReconciler) reconcileDelete(ctx context.Context, log logr.Logger, openstackCluster *capo.OpenStackCluster) (reconcile.Result, error) {
 	if !controllerutil.ContainsFinalizer(openstackCluster, key.CleanerFinalizerName) {
 		return ctrl.Result{}, nil
 	}
 
+	clusterName, ok := openstackCluster.Labels[key.CapiClusterLabelKey]
+	if !ok {
+		log.V(1).Info("Openstackcluster don't have necessary label",
+			"expectedLabelKey", key.CapiClusterLabelKey,
+			"existingLabels", openstackCluster.Labels)
+		return ctrl.Result{}, nil
+	}
+
+	clusterTag := fmt.Sprintf("%s_%s_%s", key.ClusterTagPrefix, r.ManagementCluster, clusterName)
+	log.V(1).Info("Cleaning openstack resources with", "tag", clusterTag)
 	for _, c := range r.Cleaners {
-		if err := c.Clean(r.Client, r.Log, openstackCluster); err != nil {
+		if err := c.Clean(ctx, log, openstackCluster, clusterTag); err != nil {
 			return reconcile.Result{}, microerror.Mask(err)
 		}
 	}
+
 	// openstackCluster is deleted so remove the finalizer.
 	controllerutil.RemoveFinalizer(openstackCluster, key.CleanerFinalizerName)
 	// Finally remove the finalizer
