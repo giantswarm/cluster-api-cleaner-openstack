@@ -1,0 +1,9 @@
+name: cluster-api-cleaner-openstack
+version: [[ .Version ]]
+description: "Operator for cleaning leftover OpenStack resources of workload clusters"
+appVersion: "[[ .AppVersion ]]"
+home: "https://github.com/giantswarm/cluster-api-cleaner-openstack"
+apiVersion: v1
+annotations:
+  application.giantswarm.io/team: "rocket"
+  config.giantswarm.io/version: 1.x.x
