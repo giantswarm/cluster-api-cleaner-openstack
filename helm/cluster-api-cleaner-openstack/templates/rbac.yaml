@@ -10,9 +10,11 @@ rules:
   - infrastructure.cluster.x-k8s.io
   resources:
   - openstackclusters
+  - openstackmachinetemplates
   - openstackclusters/status
   - clusters
   - clusters/status
+  - machinesets
   verbs:
   - get
   - list
