@@ -32,3 +32,11 @@ rules:
   - get
   - patch
   - update
+- apiGroups:
+  - infrastructure.cluster.x-k8s.io
+  resources:
+  - openstackmachinetemplate
+  verbs:
+  - get
+  - list
+  - watch

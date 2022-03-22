@@ -7,6 +7,7 @@ require (
 	github.com/go-logr/logr v0.4.0
 	github.com/gophercloud/gophercloud v0.16.0
 	github.com/prometheus/client_golang v1.12.0 // indirect
+	go.uber.org/zap v1.19.0
 	golang.org/x/net v0.0.0-20211216030914-fe4d6282115f // indirect
 	k8s.io/apimachinery v0.22.2
 	k8s.io/client-go v0.22.2
