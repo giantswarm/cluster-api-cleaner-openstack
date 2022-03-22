@@ -18,7 +18,6 @@ package controllers
 
 import (
 	"context"
-	"errors"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -43,13 +42,11 @@ type OpenstackMachineTemplateReconciler struct {
 }
 
 // +kubebuilder:rbac:groups=,resources=secrets,verbs=get;list;watch
-// +kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=openstackmachinetemplate,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=openstackmachinetemplate/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=openstackmachinetemplate,verbs=get;list;watch
 
 func (r *OpenstackMachineTemplateReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := r.Log.WithValues("openstackmachinetemplate", req.NamespacedName)
 	log.V(1).Info("Reconciling")
-
 	var template capo.OpenStackMachineTemplate
 	err := r.Get(ctx, req.NamespacedName, &template)
 	if err != nil {
@@ -85,18 +82,14 @@ func (r *OpenstackMachineTemplateReconciler) reconcileDelete(ctx context.Context
 	}
 
 	if exists {
-		log.V(1).Info("There are still some machine sets using this template.")
+		log.V(1).Info("There are still some machinesets using this template.")
 		return reconcile.Result{RequeueAfter: time.Minute * 5}, nil
 	} else {
-		log.Info("There is no machine sets using this template. Removing finalizer.")
+		log.Info("There is no machineset using this template. Removing finalizer.")
 		controllerutil.RemoveFinalizer(template, key.CleanerFinalizerName)
-
-		if err := r.Update(ctx, template); err != nil {
-			return reconcile.Result{}, microerror.Mask(err)
-		}
+		err = r.Update(ctx, template)
+		return reconcile.Result{}, microerror.Mask(err)
 	}
-
-	return ctrl.Result{}, nil
 }
 
 func (r *OpenstackMachineTemplateReconciler) consumerMachineSetExists(ctx context.Context, log logr.Logger, template *capo.OpenStackMachineTemplate) (bool, error) {
@@ -105,7 +98,7 @@ func (r *OpenstackMachineTemplateReconciler) consumerMachineSetExists(ctx contex
 		log.V(1).Info("Template don't have cluster name label",
 			"expectedLabelKey", key.CapiClusterLabelKey,
 			"existingLabels", template.Labels)
-		return false, errors.New("template don't have cluster name label")
+		return false, microerror.Maskf(invalidObjectError, "template don't have cluster name label")
 	}
 
 	var machineSetList capi.MachineSetList
@@ -118,9 +111,7 @@ func (r *OpenstackMachineTemplateReconciler) consumerMachineSetExists(ctx contex
 
 	for _, machineSet := range machineSetList.Items {
 		infraRef := machineSet.Spec.Template.Spec.InfrastructureRef
-		if infraRef.Name == template.Name &&
-			infraRef.Kind == template.Kind &&
-			infraRef.APIVersion == template.APIVersion {
+		if infraRef.Name == template.Name && infraRef.Kind == template.Kind {
 			log.V(1).Info("There is a machineset using the template", "machineset", machineSet.Name)
 			return true, nil
 		}

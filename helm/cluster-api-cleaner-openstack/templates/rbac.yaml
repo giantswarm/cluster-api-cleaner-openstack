@@ -7,20 +7,26 @@ metadata:
 rules:
 - apiGroups:
   - cluster.x-k8s.io
-  - infrastructure.cluster.x-k8s.io
   resources:
-  - openstackclusters
-  - openstackmachinetemplates
-  - openstackclusters/status
   - clusters
   - clusters/status
   - machinesets
   verbs:
   - get
   - list
-  - patch
-  - update
   - watch
+- apiGroups:
+    - infrastructure.cluster.x-k8s.io
+  resources:
+    - openstackclusters
+    - openstackmachinetemplates
+    - openstackclusters/status
+  verbs:
+    - get
+    - list
+    - patch
+    - update
+    - watch
 - apiGroups:
   - coordination.k8s.io
   resources:

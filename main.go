@@ -22,14 +22,14 @@ import (
 	"fmt"
 	"os"
 
+	"go.uber.org/zap/zapcore"
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
-	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/log/zap"
-
 	capo "sigs.k8s.io/cluster-api-provider-openstack/api/v1alpha4"
 	capi "sigs.k8s.io/cluster-api/api/v1beta1"
+	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	"github.com/giantswarm/microerror"
 
@@ -64,6 +64,7 @@ func mainE(ctx context.Context) error {
 		enableLeaderElection bool
 		managementCluster    string
 		metricsAddr          string
+		logLevel             int
 	)
 
 	flag.BoolVar(&enableLeaderElection, "enable-leader-election", false,
@@ -73,9 +74,11 @@ func mainE(ctx context.Context) error {
 
 	flag.StringVar(&managementCluster, "management-cluster", "", "Name of the management cluster.")
 
+	flag.IntVar(&logLevel, "v", 0, "Number for the log level verbosity")
+
 	flag.Parse()
 
-	ctrl.SetLogger(zap.New(zap.UseDevMode(true)))
+	ctrl.SetLogger(zap.New(zap.Level(zapcore.Level(-logLevel))))
 
 	config, err := ctrl.GetConfig()
 	if err != nil {

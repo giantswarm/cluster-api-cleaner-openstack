@@ -37,18 +37,6 @@ rules:
   resources:
   - openstackmachinetemplate
   verbs:
-  - create
-  - delete
   - get
   - list
-  - patch
-  - update
   - watch
-- apiGroups:
-  - infrastructure.cluster.x-k8s.io
-  resources:
-  - openstackmachinetemplate/status
-  verbs:
-  - get
-  - patch
-  - update
