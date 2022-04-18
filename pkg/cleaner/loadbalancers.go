@@ -15,6 +15,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/giantswarm/microerror"
+
+	"github.com/giantswarm/cluster-api-cleaner-openstack/pkg/key"
 )
 
 type LoadBalancerCleaner struct {
@@ -28,38 +30,45 @@ func NewLoadBalancerCleaner(cli client.Client) *LoadBalancerCleaner {
 // force implementing Cleaner interface
 var _ Cleaner = &LoadBalancerCleaner{}
 
-func (lbc *LoadBalancerCleaner) Clean(ctx context.Context, log logr.Logger, oc *capo.OpenStackCluster, clusterTag string) error {
+func (lbc *LoadBalancerCleaner) Clean(ctx context.Context, log logr.Logger, oc *capo.OpenStackCluster, clusterTag string) (bool, error) {
 	log = log.WithName("LoadBalancerCleaner")
 
 	providerClient, opts, err := provider.NewClientFromCluster(ctx, lbc.cli, oc)
 	if err != nil {
-		return microerror.Mask(err)
+		return true, microerror.Mask(err)
 	}
 
 	loadbalancerClient, err := openstack.NewLoadBalancerV2(providerClient, gophercloud.EndpointOpts{
 		Region: opts.RegionName,
 	})
 	if err != nil {
-		return microerror.Mask(err)
+		return true, microerror.Mask(err)
 	}
 
 	allPages, err := loadbalancers.List(loadbalancerClient, loadbalancers.ListOpts{}).AllPages()
 	if err != nil {
-		return microerror.Mask(err)
+		return true, microerror.Mask(err)
 	}
 
 	lbList, err := loadbalancers.ExtractLoadBalancers(allPages)
 	if err != nil {
-		return microerror.Mask(err)
+		return true, microerror.Mask(err)
 	}
 
 	networkingService, err := networking.NewService(providerClient, opts, log)
 	if err != nil {
-		return microerror.Mask(err)
+		return true, microerror.Mask(err)
 	}
 
+	requeue := false
 	for _, lb := range lbList {
 		if !mustBeDeleted(lb, clusterTag) {
+			continue
+		}
+
+		if lb.ProvisioningStatus == key.LoadBalancerProvisioningStatusPendingDelete {
+			log.V(1).Info("Loadbalancer is being deleted", "id", lb.ID)
+			requeue = true
 			continue
 		}
 
@@ -70,26 +79,33 @@ func (lbc *LoadBalancerCleaner) Clean(ctx context.Context, log logr.Logger, oc *
 		if lb.VipPortID != "" {
 			fip, err := networkingService.GetFloatingIPByPortID(lb.VipPortID)
 			if err != nil {
-				return microerror.Mask(err)
+				return true, microerror.Mask(err)
 			}
 
 			if fip != nil && fip.FloatingIP != "" {
 				log.Info("Cleaning floating IP", "ip", fip.FloatingIP, "loadbalancer", lb.ID)
 				err = lbc.cleanFloatingIP(networkingService, oc, fip)
 				if err != nil {
-					return microerror.Mask(err)
+					return true, microerror.Mask(err)
 				}
 			}
 		}
 
-		log.Info("Cleaning load balancer", "id", lb.ID)
+		log.Info("Cleaning load balancer", "id", lb.ID, "status", lb.ProvisioningStatus)
 		err = loadbalancers.Delete(loadbalancerClient, lb.ID, deleteOpts).ExtractErr()
 		if err != nil {
-			return microerror.Mask(err)
+			return true, microerror.Mask(err)
+		} else {
+			requeue = true
 		}
 	}
 
-	return nil
+	log.V(1).Info("", "Requeue", requeue)
+	if requeue {
+		return true, nil
+	} else {
+		return false, nil
+	}
 }
 
 func (lbc *LoadBalancerCleaner) cleanFloatingIP(ns *networking.Service, oc *capo.OpenStackCluster, fip *floatingips.FloatingIP) error {

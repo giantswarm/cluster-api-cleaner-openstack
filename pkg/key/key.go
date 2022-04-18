@@ -5,4 +5,7 @@ const (
 	CapiClusterLabelKey  = "cluster.x-k8s.io/cluster-name"
 	CleanerFinalizerName = "cluster-api-cleaner-openstack.finalizers.giantswarm.io"
 	CinderCsiTag         = "cinder.csi.openstack.org/cluster"
+
+	LoadBalancerProvisioningStatusPendingDelete = "PENDING_DELETE"
+	VolumeStatusDeleting                        = "deleting"
 )

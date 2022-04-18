@@ -27,43 +27,58 @@ func NewVolumeCleaner(cli client.Client) *VolumeCleaner {
 // force implementing Cleaner interface
 var _ Cleaner = &VolumeCleaner{}
 
-func (vc *VolumeCleaner) Clean(ctx context.Context, log logr.Logger, oc *capo.OpenStackCluster, clusterTag string) error {
+func (vc *VolumeCleaner) Clean(ctx context.Context, log logr.Logger, oc *capo.OpenStackCluster, clusterTag string) (bool, error) {
 	log = log.WithName("VolumeCleaner")
 
 	providerClient, opts, err := provider.NewClientFromCluster(ctx, vc.cli, oc)
 	if err != nil {
-		return microerror.Mask(err)
+		return true, microerror.Mask(err)
 	}
 
 	volumeClient, err := openstack.NewBlockStorageV3(providerClient, gophercloud.EndpointOpts{
 		Region: opts.RegionName,
 	})
 	if err != nil {
-		return microerror.Mask(err)
+		return true, microerror.Mask(err)
 	}
 
 	listOpts := volumes.ListOpts{Metadata: map[string]string{key.CinderCsiTag: clusterTag}}
 	allPages, err := volumes.List(volumeClient, listOpts).AllPages()
 	if err != nil {
-		return microerror.Mask(err)
+		return true, microerror.Mask(err)
 	}
 
 	volumeList, err := volumes.ExtractVolumes(allPages)
 	if err != nil {
-		return microerror.Mask(err)
+		return true, microerror.Mask(err)
 	}
 
 	deleteOpts := volumes.DeleteOpts{
 		Cascade: true,
 	}
 
+	requeue := false
 	for _, volume := range volumeList {
-		log.Info("Cleaning volume", "id", volume.ID)
+		log.Info("Cleaning volume.", "id", volume.ID, "status", volume.Status)
+		if volume.Status == key.VolumeStatusDeleting {
+			log.V(1).Info("Volume is being deleted", "id", volume.ID)
+			requeue = true
+			continue
+		}
+
 		err = volumes.Delete(volumeClient, volume.ID, deleteOpts).ExtractErr()
 		if err != nil {
-			return microerror.Mask(err)
+			return true, microerror.Mask(err)
+		} else {
+			requeue = true
 		}
 	}
 
-	return nil
+	log.V(1).Info("", "Requeue", requeue)
+	if requeue {
+		return true, nil
+	} else {
+		return false, nil
+	}
+
 }
