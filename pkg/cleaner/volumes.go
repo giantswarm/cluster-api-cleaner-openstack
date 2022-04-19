@@ -61,7 +61,7 @@ func (vc *VolumeCleaner) Clean(ctx context.Context, log logr.Logger, oc *capo.Op
 	for _, volume := range volumeList {
 		log.Info("Cleaning volume.", "id", volume.ID, "status", volume.Status)
 		if volume.Status == key.VolumeStatusDeleting {
-			log.V(1).Info("Volume is being deleted", "id", volume.ID)
+			log.V(1).Info("Volume deletion already triggered", "id", volume.ID)
 			requeue = true
 			continue
 		}

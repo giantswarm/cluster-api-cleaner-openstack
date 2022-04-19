@@ -66,8 +66,10 @@ func (lbc *LoadBalancerCleaner) Clean(ctx context.Context, log logr.Logger, oc *
 			continue
 		}
 
+		log.Info("Cleaning load balancer", "id", lb.ID, "status", lb.ProvisioningStatus)
+
 		if lb.ProvisioningStatus == key.LoadBalancerProvisioningStatusPendingDelete {
-			log.V(1).Info("Loadbalancer is being deleted", "id", lb.ID)
+			log.V(1).Info("Loadbalancer deletion already triggered", "id", lb.ID)
 			requeue = true
 			continue
 		}
@@ -91,7 +93,6 @@ func (lbc *LoadBalancerCleaner) Clean(ctx context.Context, log logr.Logger, oc *
 			}
 		}
 
-		log.Info("Cleaning load balancer", "id", lb.ID, "status", lb.ProvisioningStatus)
 		err = loadbalancers.Delete(loadbalancerClient, lb.ID, deleteOpts).ExtractErr()
 		if err != nil {
 			return true, microerror.Mask(err)
