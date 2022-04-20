@@ -19,6 +19,7 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/go-logr/logr"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -124,10 +125,18 @@ func (r *OpenstackClusterReconciler) reconcileDelete(ctx context.Context, log lo
 
 	clusterTag := fmt.Sprintf("%s_%s_%s", key.ClusterTagPrefix, r.ManagementCluster, clusterName)
 	log.V(1).Info("Cleaning openstack resources with", "tag", clusterTag)
+	requeueForDeletion := false
 	for _, c := range r.Cleaners {
-		if err := c.Clean(ctx, log, openstackCluster, clusterTag); err != nil {
+		requeue, err := c.Clean(ctx, log, openstackCluster, clusterTag)
+		if err != nil {
 			return reconcile.Result{}, microerror.Mask(err)
 		}
+		requeueForDeletion = requeueForDeletion || requeue
+	}
+
+	if requeueForDeletion {
+		log.V(1).Info("There is an ongoing clean-up process. Adding cluster into queue again")
+		return ctrl.Result{Requeue: true, RequeueAfter: time.Second * 15}, nil
 	}
 
 	// openstackCluster is deleted so remove the finalizer.

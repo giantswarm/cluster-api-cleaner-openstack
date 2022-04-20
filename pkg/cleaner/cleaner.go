@@ -8,5 +8,5 @@ import (
 )
 
 type Cleaner interface {
-	Clean(ctx context.Context, log logr.Logger, oc *capo.OpenStackCluster, clusterTag string) error
+	Clean(ctx context.Context, log logr.Logger, oc *capo.OpenStackCluster, clusterTag string) (requeue bool, err error)
 }
