@@ -68,8 +68,9 @@ func (lbc *LoadBalancerCleaner) Clean(ctx context.Context, log logr.Logger, oc *
 
 		log.Info("Cleaning load balancer", "id", lb.ID, "status", lb.ProvisioningStatus)
 
-		if lb.ProvisioningStatus == key.LoadBalancerProvisioningStatusPendingDelete {
-			log.V(1).Info("Loadbalancer deletion already triggered", "id", lb.ID)
+		if !isOkForDeletion(lb.ProvisioningStatus) {
+			log.V(1).Info("Will requeue openstackcluster because of the loadbalancer",
+				"id", lb.ID, "provisioningStatus", lb.ProvisioningStatus)
 			requeue = true
 			continue
 		}
@@ -107,6 +108,13 @@ func (lbc *LoadBalancerCleaner) Clean(ctx context.Context, log logr.Logger, oc *
 	} else {
 		return false, nil
 	}
+}
+
+// isOkForDeletion allows deletion only when the status is ACTIVE or ERROR
+// See https://docs.openstack.org/api-ref/load-balancer/v2/index.html#prov-status
+func isOkForDeletion(status string) bool {
+	return status == key.LoadBalancerProvisioningStatusActive ||
+		status == key.LoadBalancerProvisioningStatusError
 }
 
 func (lbc *LoadBalancerCleaner) cleanFloatingIP(ns *networking.Service, oc *capo.OpenStackCluster, fip *floatingips.FloatingIP) error {

@@ -6,6 +6,7 @@ const (
 	CleanerFinalizerName = "cluster-api-cleaner-openstack.finalizers.giantswarm.io"
 	CinderCsiTag         = "cinder.csi.openstack.org/cluster"
 
-	LoadBalancerProvisioningStatusPendingDelete = "PENDING_DELETE"
-	VolumeStatusDeleting                        = "deleting"
+	LoadBalancerProvisioningStatusActive = "ACTIVE"
+	LoadBalancerProvisioningStatusError  = "ERROR"
+	VolumeStatusDeleting                 = "deleting"
 )
