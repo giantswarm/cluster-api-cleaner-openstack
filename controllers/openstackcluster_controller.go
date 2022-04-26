@@ -139,6 +139,7 @@ func (r *OpenstackClusterReconciler) reconcileDelete(ctx context.Context, log lo
 		return ctrl.Result{Requeue: true, RequeueAfter: time.Second * 15}, nil
 	}
 
+	log.Info("Clean-up is done. Removing finalizer")
 	// openstackCluster is deleted so remove the finalizer.
 	controllerutil.RemoveFinalizer(openstackCluster, key.CleanerFinalizerName)
 	// Finally remove the finalizer
