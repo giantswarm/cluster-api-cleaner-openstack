@@ -4,16 +4,16 @@ go 1.13
 
 require (
 	github.com/giantswarm/microerror v0.4.0
-	github.com/go-logr/logr v0.4.0
+	github.com/go-logr/logr v1.2.0
 	github.com/gophercloud/gophercloud v0.16.0
 	github.com/prometheus/client_golang v1.12.0 // indirect
-	go.uber.org/zap v1.19.0
+	go.uber.org/zap v1.19.1
 	golang.org/x/net v0.0.0-20211216030914-fe4d6282115f // indirect
-	k8s.io/apimachinery v0.22.2
-	k8s.io/client-go v0.22.2
-	sigs.k8s.io/cluster-api v1.0.1-0.20211028151834-d72fd59c8483
-	sigs.k8s.io/cluster-api-provider-openstack v0.5.0
-	sigs.k8s.io/controller-runtime v0.10.3-0.20211011182302-43ea648ec318
+	k8s.io/apimachinery v0.23.0
+	k8s.io/client-go v0.23.0
+	sigs.k8s.io/cluster-api v1.1.3
+	sigs.k8s.io/cluster-api-provider-openstack v0.6.3
+	sigs.k8s.io/controller-runtime v0.11.1
 )
 
 replace (
