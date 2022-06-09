@@ -23,7 +23,7 @@ import (
 	"github.com/go-logr/logr"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/labels"
-	capo "sigs.k8s.io/cluster-api-provider-openstack/api/v1alpha4"
+	capo "sigs.k8s.io/cluster-api-provider-openstack/api/v1alpha5"
 	capi "sigs.k8s.io/cluster-api/api/v1beta1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"

@@ -7,7 +7,7 @@ import (
 	"github.com/gophercloud/gophercloud"
 	"github.com/gophercloud/gophercloud/openstack"
 	"github.com/gophercloud/gophercloud/openstack/blockstorage/v3/volumes"
-	capo "sigs.k8s.io/cluster-api-provider-openstack/api/v1alpha4"
+	capo "sigs.k8s.io/cluster-api-provider-openstack/api/v1alpha5"
 	"sigs.k8s.io/cluster-api-provider-openstack/pkg/cloud/services/provider"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -30,7 +30,7 @@ var _ Cleaner = &VolumeCleaner{}
 func (vc *VolumeCleaner) Clean(ctx context.Context, log logr.Logger, oc *capo.OpenStackCluster, clusterTag string) (bool, error) {
 	log = log.WithName("VolumeCleaner")
 
-	providerClient, opts, err := provider.NewClientFromCluster(ctx, vc.cli, oc)
+	providerClient, opts, projectID, err := provider.NewClientFromCluster(ctx, vc.cli, oc)
 	if err != nil {
 		return true, microerror.Mask(err)
 	}
@@ -59,7 +59,7 @@ func (vc *VolumeCleaner) Clean(ctx context.Context, log logr.Logger, oc *capo.Op
 
 	requeue := false
 	for _, volume := range volumeList {
-		log.Info("Cleaning volume.", "id", volume.ID, "status", volume.Status)
+		log.Info("Cleaning volume.", "id", volume.ID, "status", volume.Status, "project", projectID)
 		if volume.Status == key.VolumeStatusDeleting {
 			log.V(1).Info("Volume deletion already triggered", "id", volume.ID)
 			requeue = true

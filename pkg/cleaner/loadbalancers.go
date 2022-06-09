@@ -9,9 +9,10 @@ import (
 	"github.com/gophercloud/gophercloud/openstack"
 	"github.com/gophercloud/gophercloud/openstack/loadbalancer/v2/loadbalancers"
 	"github.com/gophercloud/gophercloud/openstack/networking/v2/extensions/layer3/floatingips"
-	capo "sigs.k8s.io/cluster-api-provider-openstack/api/v1alpha4"
+	capo "sigs.k8s.io/cluster-api-provider-openstack/api/v1alpha5"
 	"sigs.k8s.io/cluster-api-provider-openstack/pkg/cloud/services/networking"
 	"sigs.k8s.io/cluster-api-provider-openstack/pkg/cloud/services/provider"
+	"sigs.k8s.io/cluster-api-provider-openstack/pkg/scope"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/giantswarm/microerror"
@@ -33,9 +34,16 @@ var _ Cleaner = &LoadBalancerCleaner{}
 func (lbc *LoadBalancerCleaner) Clean(ctx context.Context, log logr.Logger, oc *capo.OpenStackCluster, clusterTag string) (bool, error) {
 	log = log.WithName("LoadBalancerCleaner")
 
-	providerClient, opts, err := provider.NewClientFromCluster(ctx, lbc.cli, oc)
+	providerClient, opts, projectID, err := provider.NewClientFromCluster(ctx, lbc.cli, oc)
 	if err != nil {
 		return true, microerror.Mask(err)
+	}
+
+	scope := &scope.Scope{
+		ProviderClient:     providerClient,
+		ProviderClientOpts: opts,
+		ProjectID:          projectID,
+		Logger:             log,
 	}
 
 	loadbalancerClient, err := openstack.NewLoadBalancerV2(providerClient, gophercloud.EndpointOpts{
@@ -55,7 +63,7 @@ func (lbc *LoadBalancerCleaner) Clean(ctx context.Context, log logr.Logger, oc *
 		return true, microerror.Mask(err)
 	}
 
-	networkingService, err := networking.NewService(providerClient, opts, log)
+	networkingService, err := networking.NewService(scope)
 	if err != nil {
 		return true, microerror.Mask(err)
 	}
@@ -66,7 +74,7 @@ func (lbc *LoadBalancerCleaner) Clean(ctx context.Context, log logr.Logger, oc *
 			continue
 		}
 
-		log.Info("Cleaning load balancer", "id", lb.ID, "status", lb.ProvisioningStatus)
+		log.Info("Cleaning load balancer", "id", lb.ID, "status", lb.ProvisioningStatus, "project", projectID)
 
 		if !isOkForDeletion(lb.ProvisioningStatus) {
 			log.V(1).Info("Will requeue openstackcluster because of the loadbalancer",
@@ -86,7 +94,7 @@ func (lbc *LoadBalancerCleaner) Clean(ctx context.Context, log logr.Logger, oc *
 			}
 
 			if fip != nil && fip.FloatingIP != "" {
-				log.Info("Cleaning floating IP", "ip", fip.FloatingIP, "loadbalancer", lb.ID)
+				log.Info("Cleaning floating IP", "ip", fip.FloatingIP, "loadbalancer", lb.ID, "project", projectID)
 				err = lbc.cleanFloatingIP(networkingService, oc, fip)
 				if err != nil {
 					return true, microerror.Mask(err)
