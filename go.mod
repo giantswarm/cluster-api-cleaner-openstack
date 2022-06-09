@@ -21,7 +21,8 @@ require (
 replace (
 	github.com/Microsoft/hcsshim v0.8.7 => github.com/Microsoft/hcsshim v0.9.2
 	github.com/aws/aws-sdk-go v1.15.11 => github.com/aws/aws-sdk-go v1.34.34
-	github.com/containerd/containerd v1.5.9 => github.com/containerd/containerd v1.6.4
+	github.com/containerd/containerd v1.5.9 => github.com/containerd/containerd v1.6.6
+	github.com/containerd/containerd v1.6.1 => github.com/containerd/containerd v1.6.6
 	github.com/containerd/imgcrypt v1.1.1 => github.com/containerd/imgcrypt v1.1.5
 	github.com/coreos/etcd => github.com/coreos/etcd v3.3.25+incompatible
 	github.com/dgrijalva/jwt-go => github.com/dgrijalva/jwt-go/v4 v4.0.0-preview1
