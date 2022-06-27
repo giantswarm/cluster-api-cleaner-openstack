@@ -19,7 +19,6 @@ rules:
     - infrastructure.cluster.x-k8s.io
   resources:
     - openstackclusters
-    - openstackmachinetemplates
     - openstackclusters/status
   verbs:
     - get

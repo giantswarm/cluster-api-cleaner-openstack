@@ -113,13 +113,6 @@ func mainE(ctx context.Context) error {
 		return err
 	}
 
-	if err = (&controllers.OpenstackMachineTemplateReconciler{
-		Client: mgr.GetClient(),
-		Log:    ctrl.Log.WithName("controllers").WithName("OpenStackMachineTemplate"),
-	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "OpenStackMachineTemplate")
-		return err
-	}
 	// +kubebuilder:scaffold:builder
 
 	setupLog.Info("starting manager")
