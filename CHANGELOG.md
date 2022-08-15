@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## Changed
+
+- Increase memory limit from `80Mi` to `200Mi` since we observed `OOMKilled` in production.
+
 ## [0.5.0] - 2022-06-27
 
 ## Removed
