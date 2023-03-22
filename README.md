@@ -1,3 +1,7 @@
+# This repo is currently UNMAINTAINED.
+**If you want to work on it, please fork.**
+
+
 # cluster-api-cleaner-openstack
 
 A helper operator for CAPO to delete resources created by apps in workload clusters.
