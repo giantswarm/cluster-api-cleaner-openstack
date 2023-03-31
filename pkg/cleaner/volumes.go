@@ -7,7 +7,7 @@ import (
 	"github.com/gophercloud/gophercloud"
 	"github.com/gophercloud/gophercloud/openstack"
 	"github.com/gophercloud/gophercloud/openstack/blockstorage/v3/volumes"
-	capo "sigs.k8s.io/cluster-api-provider-openstack/api/v1alpha5"
+	capo "sigs.k8s.io/cluster-api-provider-openstack/api/v1alpha6"
 	"sigs.k8s.io/cluster-api-provider-openstack/pkg/cloud/services/provider"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 

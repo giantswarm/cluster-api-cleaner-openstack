@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/go-logr/logr"
-	capo "sigs.k8s.io/cluster-api-provider-openstack/api/v1alpha5"
+	capo "sigs.k8s.io/cluster-api-provider-openstack/api/v1alpha6"
 )
 
 type Cleaner interface {

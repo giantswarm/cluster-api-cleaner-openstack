@@ -1,6 +1,3 @@
-project:
-  branch: "[[ .Branch ]]"
-  commit: "[[ .SHA ]]"
 image:
   name: "giantswarm/cluster-api-cleaner-openstack"
   tag: "[[ .Version ]]"
