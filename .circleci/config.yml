@@ -55,16 +55,3 @@ workflows:
           # Trigger the job also on git tag.
           tags:
             only: /^v.*/
-
-    - architect/push-to-app-collection:
-        context: architect
-        name: push-to-openstack-app-collection
-        app_name: "cluster-api-cleaner-openstack"
-        app_collection_repo: "openstack-app-collection"
-        requires:
-        - push-to-app-catalog
-        filters:
-          branches:
-            ignore: /.*/
-          tags:
-            only: /^v.*/
