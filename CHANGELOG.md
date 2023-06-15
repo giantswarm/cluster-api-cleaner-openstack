@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Stop pushing to `openstack-app-collection`.
 
+## Changed
+
+- Make PSP Rendering conditional for 1.25+ compability
+
 ## [0.6.0] - 2022-08-15
 
 ## Changed
