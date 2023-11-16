@@ -3,7 +3,7 @@ module github.com/giantswarm/cluster-api-cleaner-openstack
 go 1.13
 
 require (
-	github.com/giantswarm/microerror v0.4.0
+	github.com/giantswarm/microerror v0.4.1
 	github.com/go-logr/logr v1.2.2
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/gophercloud/gophercloud v0.16.0
