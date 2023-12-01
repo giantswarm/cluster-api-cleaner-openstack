@@ -6,7 +6,7 @@ require (
 	github.com/giantswarm/microerror v0.4.0
 	github.com/go-logr/logr v1.2.2
 	github.com/google/uuid v1.3.0 // indirect
-	github.com/gophercloud/gophercloud v0.16.0
+	github.com/gophercloud/gophercloud v1.8.0
 	github.com/prometheus/client_golang v1.12.0 // indirect
 	go.uber.org/zap v1.19.1
 	golang.org/x/net v0.0.0-20220531201128-c960675eff93 // indirect
