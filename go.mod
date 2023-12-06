@@ -4,11 +4,11 @@ go 1.13
 
 require (
 	github.com/giantswarm/microerror v0.4.0
-	github.com/go-logr/logr v1.2.2
+	github.com/go-logr/logr v1.3.0
 	github.com/google/uuid v1.3.0 // indirect
-	github.com/gophercloud/gophercloud v0.16.0
+	github.com/gophercloud/gophercloud v0.25.0
 	github.com/prometheus/client_golang v1.12.0 // indirect
-	go.uber.org/zap v1.19.1
+	go.uber.org/zap v1.26.0
 	golang.org/x/net v0.0.0-20220531201128-c960675eff93 // indirect
 	google.golang.org/protobuf v1.28.0 // indirect
 	k8s.io/apimachinery v0.23.0
@@ -24,7 +24,7 @@ replace (
 	github.com/containerd/containerd v1.5.9 => github.com/containerd/containerd v1.6.6
 	github.com/containerd/containerd v1.6.1 => github.com/containerd/containerd v1.6.6
 	github.com/containerd/imgcrypt v1.1.1 => github.com/containerd/imgcrypt v1.1.5
-	github.com/coreos/etcd => github.com/coreos/etcd v3.3.25+incompatible
+	github.com/coreos/etcd => github.com/coreos/etcd v3.3.27+incompatible
 	github.com/dgrijalva/jwt-go => github.com/dgrijalva/jwt-go/v4 v4.0.0-preview1
 	github.com/gogo/protobuf v1.3.1 => github.com/gogo/protobuf v1.3.2
 	github.com/gorilla/websocket v1.4.0 => github.com/gorilla/websocket v1.4.2
